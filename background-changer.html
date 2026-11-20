@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>证件照换底色 - exam-photo-tools Tool 2</title>
+<style>body{font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px}canvas{max-width:100%;border:1px solid #ccc}button{padding:8px 14px;margin:4px 4px 4px 0}</style>
+</head>
+<body>
+<h1>证件照换底色（原型）</h1>
+<p>上传证件照，选一个底色，工具把照片放到新底色上，输出为要求的像素和 JPG。注意：这是一键换底的原型，头发边缘复杂时效果有限，正式证件请以官方要求为准。</p>
+<input type="file" id="file" accept="image/*">
+<div>
+  <button data-bg="#ffffff">白色</button>
+  <button data-bg="#0000ff">蓝色</button>
+  <button data-bg="#ff0000">红色</button>
+</div>
+<p>目标像素：<input id="w" type="number" value="295" style="width:70px"> × <input id="h" type="number" value="413" style="width:70px"></p>
+<canvas id="cv" width="295" height="413"></canvas>
+<p id="msg"></p>
+<button id="dl">下载 JPG</button>
+<script>
+var img=null, bg="#ffffff";
+document.getElementById("file").addEventListener("change", function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ img=new Image(); img.onload=draw; img.src=r.result; };
+  r.readAsDataURL(f);
+});
+document.querySelectorAll("[data-bg]").forEach(function(b){
+  b.addEventListener("click", function(){ bg=b.dataset.bg; draw(); });
+});
+function draw(){
+  if(!img) return;
+  var W=parseInt(document.getElementById("w").value,10)||295;
+  var H=parseInt(document.getElementById("h").value,10)||413;
+  var cv=document.getElementById("cv"); cv.width=W; cv.height=H;
+  var ctx=cv.getContext("2d");
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  // center-crop to target ratio, then draw
+  var tr=W/H, sr=img.width/img.height, sx, sy, sw, sh;
+  if(sr>tr){ sw=Math.round(img.height*tr); sh=img.height; sx=Math.round((img.width-sw)/2); sy=0; }
+  else { sw=img.width; sh=Math.round(img.width/tr); sx=0; sy=Math.round((img.height-sh)/2); }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+  document.getElementById("msg").textContent="已换底色 "+bg+"，像素 "+W+" × "+H;
+}
+document.getElementById("dl").addEventListener("click", function(){
+  var cv=document.getElementById("cv");
+  cv.toBlob(function(b){
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(b); a.download="id-photo.jpg"; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  }, "image/jpeg", 0.92);
+});
+</script>
+</body>
+</html>

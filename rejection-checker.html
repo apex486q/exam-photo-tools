@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>报名照片驳回自检 - exam-photo-tools Tool 3</title>
+<style>body{font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px}.pass{color:green}.fail{color:red}li{margin:6px 0}</style>
+</head>
+<body>
+<h1>报名照片驳回自检（原型）</h1>
+<p>上传照片，填入报名要求，工具逐项检查像素、大小、格式、比例，告诉你哪项通过、哪项不通过、具体怎么改。</p>
+<p>要求像素：<input id="w" type="number" value="295" style="width:70px"> × <input id="h" type="number" value="413" style="width:70px"> &nbsp; 大小：<input id="min" type="number" value="10" style="width:60px">–<input id="max" type="number" value="50" style="width:60px"> KB</p>
+<input type="file" id="file" accept="image/*">
+<ul id="out"></ul>
+<script>
+document.getElementById("file").addEventListener("change", function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var W=parseInt(document.getElementById("w").value,10)||295;
+  var H=parseInt(document.getElementById("h").value,10)||413;
+  var minKB=parseInt(document.getElementById("min").value,10)||0;
+  var maxKB=parseInt(document.getElementById("max").value,10)||50;
+  var img=new Image();
+  img.onload=function(){
+    var out=document.getElementById("out"); out.innerHTML="";
+    function row(ok, text){ var li=document.createElement("li"); li.className=ok?"pass":"fail"; li.textContent=(ok?"通过：":"不通过：")+text; out.appendChild(li); }
+    row(f.type==="image/jpeg" || f.type==="image/jpg", "格式是 "+f.type+"，要求 JPG");
+    row(img.width===W && img.height===H, "像素是 "+img.width+" × "+img.height+"，要求 "+W+" × "+H);
+    var kb=f.size/1024;
+    row(kb>=minKB && kb<=maxKB, "大小是 "+kb.toFixed(1)+" KB，要求 "+minKB+"–"+maxKB+" KB");
+    row(Math.abs(img.width/img.height - W/H) < 0.01, "比例是 "+(img.width/img.height).toFixed(2)+"，要求 "+(W/H).toFixed(2));
+    row(img.width>=W && img.height>=H, "原图不小于目标像素，不是放大出来的（原图 "+img.width+" × "+img.height+"）");
+    if(img.width<W || img.height<H) row(false, "原图比目标小，放大后会发糊，建议换一张更清楚的大图");
+  };
+  img.src=URL.createObjectURL(f);
+});
+</script>
+</body>
+</html>

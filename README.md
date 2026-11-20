@@ -4,13 +4,13 @@ Free tools for Chinese exam registration photos. Built for Gaokao, CET, civil se
 
 ## What it does now
 
-- **Photo compressor (Tool 1, working prototype):** enter the required width, height and KB range, upload a photo, it center-crops to the right ratio, resizes to the exact pixels, then binary-searches JPEG quality (0.02–1) to fit the KB range. All processing is client-side, no upload, no server.
+- **Photo compressor (Tool 1, working prototype in `index.html`):** enter the required width, height and KB range, upload a photo, it center-crops to the right ratio, resizes to the exact pixels, then binary-searches JPEG quality (0.02–1) to fit the KB range. All processing is client-side, no upload, no server.
 - **Self-check before download:** checks pixels, size, whether the original was upscaled, and tells you exactly what failed and what to fix.
+- **Background changer (Tool 2, working prototype in `background-changer.html`):** upload a photo, pick white / blue / red, it center-crops to the target pixels and draws it on the new background, downloads as JPG.
+- **Rejection checker (Tool 3, working prototype in `rejection-checker.html`):** upload a photo, enter the required pixels and KB range, it checks format, pixels, size, ratio and upscaling, and lists pass / fail with what to fix.
 
 ## Next tools (roadmap)
 
-- Tool 2: ID photo background changer — white / blue / red background, exact pixels + KB output.
-- Tool 3: Photo rejection checker — pre-flight linter for background, face size, lighting, pixels and KB.
 - Tool 4: Batch processor for teachers — upload 100 photos, compress all, rename by student ID, download as zip.
 
 ## Tech stack
