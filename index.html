@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>报名照片压准自检</title>
+    <style>
+      :root {
+        --bg: #f3f5f4;
+        --surface: #ffffff;
+        --surface-2: #eef1ef;
+        --ink: #1b2420;
+        --ink-soft: #4a5851;
+        --ink-faint: #71817a;
+        --line: #d9dfdc;
+        --accent: #0e6b5e;
+        --accent-strong: #095347;
+        --accent-soft: #e2f0ec;
+        --pass: #177245;
+        --pass-bg: #e5f3ea;
+        --warn: #92580a;
+        --warn-bg: #fdf0da;
+        --fail: #b3352b;
+        --fail-bg: #fbe9e7;
+        --radius: 14px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101312;
+          --surface: #1a1e1c;
+          --surface-2: #232825;
+          --ink: #e9edeb;
+          --ink-soft: #b3beb8;
+          --ink-faint: #86938c;
+          --line: #333a36;
+          --accent: #45b8a6;
+          --accent-strong: #6fd3c0;
+          --accent-soft: #17332d;
+          --pass: #6fce9a;
+          --pass-bg: #173326;
+          --warn: #eec27f;
+          --warn-bg: #3a2c12;
+          --fail: #f0938a;
+          --fail-bg: #3d1f1c;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+
+      header.intro { padding: 10px 2px 4px; }
+      h1 { font-size: 27px; line-height: 1.25; margin: 0 0 8px; letter-spacing: .01em; }
+      .lede { margin: 0 0 14px; color: var(--ink-soft); font-size: 15.5px; }
+      .privacy {
+        display: flex; gap: 10px; align-items: flex-start;
+        background: var(--accent-soft);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-size: 14.5px;
+      }
+      .privacy svg { flex: 0 0 auto; margin-top: 2px; }
+      .privacy strong { color: var(--accent-strong); }
+
+      section.step {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px 16px 20px;
+        margin-top: 16px;
+      }
+      .step-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+      .step-num {
+        flex: 0 0 auto;
+        width: 26px; height: 26px; border-radius: 50%;
+        background: var(--accent); color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700;
+        transform: translateY(5px);
+      }
+      @media (prefers-color-scheme: dark) { .step-num { color: #0c1512; } }
+      .step-head h2 { font-size: 19px; margin: 0; }
+      .step-head p { margin: 2px 0 0; color: var(--ink-faint); font-size: 13.5px; }
+
+      /* 上传区 */
+      .drop {
+        position: relative;
+        border: 2px dashed var(--line);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+        padding: 26px 14px;
+        text-align: center;
+        color: var(--ink-soft);
+      }
+      .drop-inner { pointer-events: none; }
+      .drop .big { display: block; font-size: 16.5px; font-weight: 600; color: var(--ink); margin-top: 6px; }
+      .drop .small { display: block; font-size: 13px; color: var(--ink-faint); margin-top: 2px; }
+      /* 文件框本体铺满整个上传区：看不见，但点哪儿都能选照片 */
+      input[type="file"] {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        margin: 0; padding: 0; border: 0;
+        background: transparent; color: transparent;
+        font-size: 0; cursor: pointer;
+      }
+      input[type="file"]::file-selector-button {
+        visibility: hidden; width: 0; height: 0; padding: 0; margin: 0; border: 0;
+      }
+
+      .orig-info { display: none; margin-top: 14px; }
+      .orig-info.show { display: flex; gap: 14px; align-items: center; }
+      .orig-info img {
+        width: 76px; height: 76px; object-fit: cover;
+        border-radius: 10px; border: 1px solid var(--line);
+        background: var(--surface-2);
+      }
+      .orig-info .meta { font-size: 14px; color: var(--ink-soft); }
+      .orig-info .meta strong { color: var(--ink); font-size: 15px; }
+      .orig-info .meta button {
+        margin-top: 4px; padding: 0; border: 0; background: none;
+        color: var(--accent); font-size: 14px; cursor: pointer; text-decoration: underline;
+      }
+
+      /* 预设 */
+      .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      @media (max-width: 420px) { .presets { grid-template-columns: 1fr; } }
+      .preset {
+        text-align: left; cursor: pointer;
+        border: 1.5px solid var(--line); border-radius: var(--radius);
+        background: var(--surface); padding: 12px 14px;
+        font: inherit; color: var(--ink); width: 100%;
+      }
+      .preset .name { font-weight: 700; font-size: 16px; display: block; }
+      .preset .spec { font-size: 13.5px; color: var(--ink-soft); display: block; margin-top: 2px; }
+      .preset[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
+      .note {
+        display: none; margin-top: 12px;
+        background: var(--warn-bg); color: var(--warn);
+        border-radius: 10px; padding: 10px 12px; font-size: 14px;
+      }
+      .note.show { display: block; }
+
+      .custom-fields { display: none; margin-top: 14px; }
+      .custom-fields.show { display: block; }
+      .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .field label { display: block; font-size: 13.5px; color: var(--ink-soft); margin-bottom: 4px; }
+      .field input {
+        width: 100%; font: inherit; font-size: 16px;
+        padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 10px;
+        background: var(--surface); color: var(--ink);
+      }
+      .field input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+      .field .unit { font-size: 12.5px; color: var(--ink-faint); margin-top: 3px; }
+      .form-err { display: none; color: var(--fail); font-size: 14px; margin-top: 10px; }
+      .form-err.show { display: block; }
+
+      .summary-line { margin-top: 14px; font-size: 14.5px; color: var(--ink-soft); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+      .summary-line strong { color: var(--ink); }
+
+      /* 处理按钮 */
+      .go {
+        display: block; width: 100%;
+        border: 0; border-radius: var(--radius);
+        background: var(--accent); color: #fff;
+        font: inherit; font-size: 17.5px; font-weight: 700;
+        padding: 15px; cursor: pointer;
+      }
+      .go:disabled { opacity: .45; cursor: not-allowed; }
+      .go:not(:disabled):active { background: var(--accent-strong); }
+      @media (prefers-color-scheme: dark) { .go { color: #0c1512; } }
+      .go-hint { text-align: center; color: var(--ink-faint); font-size: 13.5px; margin: 8px 0 0; }
+
+      /* 结果 */
+      #result { display: none; }
+      #result.show { display: block; }
+      .previews { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .preview-box figure { margin: 0; }
+      .preview-box .frame {
+        background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        min-height: 150px; padding: 10px;
+      }
+      .preview-box img { max-width: 100%; max-height: 300px; display: block; border-radius: 4px; }
+      .preview-box figcaption { font-size: 13.5px; color: var(--ink-soft); margin-top: 6px; text-align: center; }
+      .preview-box figcaption strong { color: var(--ink); }
+
+      table.compare { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14.5px; }
+      table.compare th, table.compare td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      table.compare th { color: var(--ink-faint); font-weight: 500; font-size: 13.5px; }
+      table.compare td:first-child { color: var(--ink-soft); width: 34%; }
+      table.compare tr:last-child th, table.compare tr:last-child td { border-bottom: 0; }
+
+      h3.sub { font-size: 16.5px; margin: 20px 0 8px; }
+      ul.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      ul.checks li {
+        display: flex; gap: 10px; align-items: flex-start;
+        border-radius: 12px; padding: 11px 12px; font-size: 14.5px;
+      }
+      ul.checks li .ic { flex: 0 0 auto; margin-top: 1px; }
+      ul.checks li .t strong { display: block; font-size: 15px; }
+      ul.checks li .t span { color: inherit; opacity: .85; font-size: 13.5px; }
+      li.st-pass { background: var(--pass-bg); color: var(--pass); }
+      li.st-warn { background: var(--warn-bg); color: var(--warn); }
+      li.st-fail { background: var(--fail-bg); color: var(--fail); }
+      @media (prefers-color-scheme: dark) {
+        li.st-pass, li.st-warn, li.st-fail { color: var(--ink); }
+        li.st-pass .ic { color: var(--pass); } li.st-warn .ic { color: var(--warn); } li.st-fail .ic { color: var(--fail); }
+      }
+
+      .tried { font-size: 13.5px; color: var(--ink-faint); margin: 10px 0 0; }
+
+      .download {
+        display: block; width: 100%; text-align: center; text-decoration: none;
+        margin-top: 16px;
+        border-radius: var(--radius);
+        background: var(--accent); color: #fff;
+        font-size: 17.5px; font-weight: 700; padding: 15px;
+      }
+      @media (prefers-color-scheme: dark) { .download { color: #0c1512; } }
+      .download:active { background: var(--accent-strong); }
+      .dl-warn { display: none; margin-top: 10px; font-size: 14px; color: var(--fail); text-align: center; }
+      .dl-warn.show { display: block; }
+
+      footer { margin-top: 22px; color: var(--ink-faint); font-size: 13px; padding: 0 4px; }
+      footer p { margin: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="intro">
+        <h1>报名照片压准自检</h1>
+        <p class="lede">报名系统说照片要多大的像素、多大的 KB，你填进来，它一次帮你裁好、压准，下载前先逐项检查一遍，不用你反复试。</p>
+        <div class="privacy">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.1-7 10-4-1.9-7-5.5-7-10V6l7-3z" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div><strong>照片不会离开你的手机。</strong>所有处理都在你自己的浏览器里完成，不上传、不保存到任何服务器，关掉这个页面就什么都不留。</div>
+        </div>
+      </header>
+
+      <!-- 第一步 -->
+      <section class="step" aria-labelledby="h-step1">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">1</span>
+          <div>
+            <h2 id="h-step1">选一张照片</h2>
+            <p>报名要用的那张正面照片，JPG、PNG 都可以</p>
+          </div>
+        </div>
+        <div class="drop" id="dropZone">
+          <div class="drop-inner">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="margin:0 auto;display:block"><rect x="3" y="5" width="18" height="14" rx="2" stroke="var(--ink-faint)" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="var(--ink-faint)"/><path d="M4 17l5-4 4 3 3-2 4 3" stroke="var(--ink-faint)" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <span class="big">点这里选照片</span>
+            <span class="small">也可以把照片文件拖到这里</span>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" aria-label="选择照片" />
+        </div>
+        <div class="orig-info" id="origInfo">
+          <img id="origThumb" alt="你选的原图预览" />
+          <div class="meta">
+            <strong id="origName">原图</strong><br />
+            <span id="origMeta"></span><br />
+            <button type="button" id="changeBtn">换一张</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 第二步 -->
+      <section class="step" aria-labelledby="h-step2">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">2</span>
+          <div>
+            <h2 id="h-step2">选报名要求</h2>
+            <p>照着报名系统里写的要求选，不清楚就选一寸</p>
+          </div>
+        </div>
+        <div class="presets" role="radiogroup" aria-label="照片要求预设">
+          <button type="button" class="preset" role="radio" aria-checked="true" data-preset="one">
+            <span class="name">一寸照</span>
+            <span class="spec">295 × 413 像素 · 不超过 200KB</span>
+          </button>
+          <button type="button" class="preset" role="radio" aria-checked="false" data-preset="two">
+            <span class="name">二寸照</span>
+            <span class="spec">413 × 579 像素 · 不超过 200KB</span>
+          </button>
+          <button type="button" class="preset" role="radio" aria-checked="false" data-preset="guokao">
+            <span class="name">国考预检</span>
+            <span class="spec">295 × 413 像素 · 10–50KB</span>
+          </button>
+          <button type="button" class="preset" role="radio" aria-checked="false" data-preset="custom">
+            <span class="name">自定义</span>
+            <span class="spec">系统要求多少，就填多少</span>
+          </button>
+        </div>
+
+        <div class="note" id="guokaoNote">
+          提醒一句：国考报名最终必须用官方的「照片处理工具」处理后才能上传，本工具只能帮你提前预检——先把像素和大小调对，少跑几趟冤枉路，不能代替官方工具。
+        </div>
+
+        <div class="custom-fields" id="customFields">
+          <div class="field-grid">
+            <div class="field">
+              <label for="inW">宽度（像素）</label>
+              <input id="inW" type="number" inputmode="numeric" min="10" max="6000" value="295" />
+            </div>
+            <div class="field">
+              <label for="inH">高度（像素）</label>
+              <input id="inH" type="number" inputmode="numeric" min="10" max="6000" value="413" />
+            </div>
+            <div class="field">
+              <label for="inMin">最小大小（KB）</label>
+              <input id="inMin" type="number" inputmode="numeric" min="0" max="10240" value="0" />
+              <div class="unit">系统没写最小值就填 0</div>
+            </div>
+            <div class="field">
+              <label for="inMax">最大大小（KB）</label>
+              <input id="inMax" type="number" inputmode="numeric" min="1" max="10240" value="200" />
+              <div class="unit">照片不能超过这个数</div>
+            </div>
+          </div>
+          <div class="form-err" id="formErr"></div>
+        </div>
+
+        <div class="summary-line" id="summaryLine"></div>
+      </section>
+
+      <!-- 第三步 -->
+      <section class="step" aria-labelledby="h-step3">
+        <div class="step-head">
+          <span class="step-num" aria-hidden="true">3</span>
+          <div>
+            <h2 id="h-step3">压准并自检</h2>
+            <p>自动裁剪、自动调画质，你不用动手试</p>
+          </div>
+        </div>
+        <button type="button" class="go" id="goBtn" disabled>先选一张照片</button>
+        <p class="go-hint">处理方式：从中间裁成要求的比例，缩放到准确像素，再反复微调画质，把大小压进要求范围。</p>
+
+        <div id="result" aria-live="polite">
+          <h3 class="sub">处理结果</h3>
+          <div class="previews">
+            <div class="preview-box">
+              <figure>
+                <div class="frame"><img id="prevOrig" alt="原图预览" /></div>
+                <figcaption>原图<br /><strong id="capOrig"></strong></figcaption>
+              </figure>
+            </div>
+            <div class="preview-box">
+              <figure>
+                <div class="frame"><img id="prevNew" alt="处理后的照片预览" /></div>
+                <figcaption>处理后<br /><strong id="capNew"></strong></figcaption>
+              </figure>
+            </div>
+          </div>
+          <p class="tried" id="triedLine"></p>
+
+          <table class="compare" aria-label="原图与处理后对比">
+            <tr><th scope="col"></th><th scope="col">原图</th><th scope="col">处理后</th></tr>
+            <tr><td>像素</td><td id="cmpOrigPx"></td><td id="cmpNewPx"></td></tr>
+            <tr><td>文件大小</td><td id="cmpOrigKb"></td><td id="cmpNewKb"></td></tr>
+            <tr><td>格式</td><td id="cmpOrigFmt"></td><td id="cmpNewFmt"></td></tr>
+          </table>
+
+          <h3 class="sub">下载前自检</h3>
+          <ul class="checks" id="checkList"></ul>
+
+          <a class="download" id="dlBtn" href="#" download="报名照片.jpg">下载处理后的照片</a>
+          <p class="dl-warn" id="dlWarn"></p>
+        </div>
+      </section>
+
+      <footer>
+        <p>这个工具只做三件事：裁比例、调像素、压大小。不换底色、不美颜、不收费、没有会员。</p>
+        <p>自检通过不等于报名系统一定通过——各系统还可能查人脸、底色等其他条件，最终以报名系统的审核结果为准。</p>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var PRESETS = {
+          one:    { w: 295, h: 413, minKB: 0,  maxKB: 200, label: "一寸照" },
+          two:    { w: 413, h: 579, minKB: 0,  maxKB: 200, label: "二寸照" },
+          guokao: { w: 295, h: 413, minKB: 10, maxKB: 50,  label: "国考预检" }
+        };
+
+        var state = {
+          file: null,          // 原始 File
+          img: null,           // 已加载的 HTMLImageElement
+          origUrl: null,       // 原图 object URL
+          origW: 0, origH: 0,  // 原图像素
+          preset: "one",
+          resultUrl: null,     // 处理结果 object URL
+          resultBlob: null
+        };
+
+        var $ = function (id) { return document.getElementById(id); };
+        var fileInput = $("fileInput"), dropLabel = $("dropZone"),
+            origInfo = $("origInfo"), origThumb = $("origThumb"),
+            origName = $("origName"), origMeta = $("origMeta"),
+            goBtn = $("goBtn"), result = $("result"),
+            summaryLine = $("summaryLine"), formErr = $("formErr"),
+            guokaoNote = $("guokaoNote"), customFields = $("customFields");
+
+        function fmtKB(bytes) {
+          var kb = bytes / 1024;
+          return (kb >= 100 ? Math.round(kb).toString() : kb.toFixed(1)) + " KB";
+        }
+        function fmtType(file) {
+          if (!file) return "—";
+          var t = (file.type || "").toLowerCase();
+          if (t.indexOf("jpeg") >= 0 || t.indexOf("jpg") >= 0) return "JPG";
+          if (t.indexOf("png") >= 0) return "PNG";
+          if (t.indexOf("webp") >= 0) return "WebP";
+          if (t.indexOf("gif") >= 0) return "GIF";
+          if (t.indexOf("bmp") >= 0) return "BMP";
+          var m = /\.([a-z0-9]+)$/i.exec(file.name || "");
+          return m ? m[1].toUpperCase() : "图片";
+        }
+        function rangeText(minKB, maxKB) {
+          if (minKB > 0) return minKB + "–" + maxKB + " KB";
+          return "不超过 " + maxKB + " KB";
+        }
+
+        /* ---------- 要求读取与校验 ---------- */
+        function readSpec() {
+          if (state.preset !== "custom") {
+            var p = PRESETS[state.preset];
+            return { ok: true, w: p.w, h: p.h, minKB: p.minKB, maxKB: p.maxKB, label: p.label };
+          }
+          var w = parseInt($("inW").value, 10),
+              h = parseInt($("inH").value, 10),
+              minKB = parseInt($("inMin").value, 10),
+              maxKB = parseInt($("inMax").value, 10);
+          if (isNaN(minKB)) minKB = 0;
+          if (!(w >= 10 && w <= 6000)) return { ok: false, err: "宽度请填 10 到 6000 之间的像素数。" };
+          if (!(h >= 10 && h <= 6000)) return { ok: false, err: "高度请填 10 到 6000 之间的像素数。" };
+          if (!(maxKB >= 1)) return { ok: false, err: "最大大小至少填 1 KB。" };
+          if (minKB < 0) return { ok: false, err: "最小大小不能小于 0。" };
+          if (minKB >= maxKB) return { ok: false, err: "最小大小要比最大大小小一点，不然没法同时满足。" };
+          return { ok: true, w: w, h: h, minKB: minKB, maxKB: maxKB, label: "自定义要求" };
+        }
+
+        function refreshSummary() {
+          var spec = readSpec();
+          if (state.preset === "custom") {
+            if (!spec.ok) {
+              formErr.textContent = spec.err;
+              formErr.classList.add("show");
+              summaryLine.innerHTML = "把上面的数字填对，这里会显示最终要求。";
+              return spec;
+            }
+            formErr.classList.remove("show");
+          }
+          summaryLine.innerHTML = "当前要求：<strong>" + spec.w + " × " + spec.h + " 像素</strong>，大小 <strong>" +
+            rangeText(spec.minKB, spec.maxKB) + "</strong>，格式 <strong>JPG</strong>。";
+          return spec;
+        }
+
+        /* ---------- 预设切换 ---------- */
+        var presetBtns = document.querySelectorAll(".preset");
+        presetBtns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            state.preset = btn.getAttribute("data-preset");
+            presetBtns.forEach(function (b) { b.setAttribute("aria-checked", b === btn ? "true" : "false"); });
+            guokaoNote.classList.toggle("show", state.preset === "guokao");
+            customFields.classList.toggle("show", state.preset === "custom");
+            refreshSummary();
+            updateGoBtn();
+          });
+        });
+        ["inW", "inH", "inMin", "inMax"].forEach(function (id) {
+          $(id).addEventListener("input", function () { refreshSummary(); updateGoBtn(); });
+        });
+
+        /* ---------- 选照片 ---------- */
+        function updateGoBtn() {
+          var spec = readSpec();
+          if (!state.file) { goBtn.disabled = true; goBtn.textContent = "先选一张照片"; return; }
+          if (!spec.ok) { goBtn.disabled = true; goBtn.textContent = "先把要求填对"; return; }
+          goBtn.disabled = false;
+          goBtn.textContent = "开始处理";
+        }
+
+        function loadFile(file) {
+          if (!file) return;
+          if (file.type && file.type.indexOf("image/") !== 0) {
+            origMeta.textContent = "这个文件不是图片，换一张照片试试。";
+            origInfo.classList.add("show");
+            origThumb.removeAttribute("src");
+            origName.textContent = file.name || "选错文件了";
+            return;
+          }
+          if (state.origUrl) URL.revokeObjectURL(state.origUrl);
+          state.file = file;
+          state.origUrl = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            state.img = img;
+            state.origW = img.naturalWidth;
+            state.origH = img.naturalHeight;
+            origThumb.src = state.origUrl;
+            origName.textContent = file.name || "原图";
+            origMeta.textContent = state.origW + " × " + state.origH + " 像素 · " + fmtKB(file.size) + " · " + fmtType(file);
+            origInfo.classList.add("show");
+            result.classList.remove("show");
+            updateGoBtn();
+          };
+          img.onerror = function () {
+            state.file = null;
+            origName.textContent = file.name || "原图";
+            origMeta.textContent = "这张照片打不开，可能文件坏了，换一张试试。";
+            origInfo.classList.add("show");
+            updateGoBtn();
+          };
+          img.src = state.origUrl;
+        }
+
+        fileInput.addEventListener("change", function () {
+          if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+          fileInput.value = "";
+        });
+        $("changeBtn").addEventListener("click", function () { fileInput.click(); });
+
+        ["dragenter", "dragover"].forEach(function (ev) {
+          dropLabel.addEventListener(ev, function (e) { e.preventDefault(); dropLabel.style.borderColor = "var(--accent)"; });
+        });
+        ["dragleave", "drop"].forEach(function (ev) {
+          dropLabel.addEventListener(ev, function (e) { e.preventDefault(); dropLabel.style.borderColor = ""; });
+        });
+        dropLabel.addEventListener("drop", function (e) {
+          var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (f) loadFile(f);
+        });
+
+        /* ---------- 处理：裁剪 + 缩放 + 二分法调画质 ---------- */
+        function canvasToBlob(canvas, quality) {
+          return new Promise(function (resolve) { canvas.toBlob(resolve, "image/jpeg", quality); });
+        }
+
+        goBtn.addEventListener("click", function () {
+          var spec = refreshSummary();
+          if (!state.file || !state.img || !spec.ok) return;
+          goBtn.disabled = true;
+          goBtn.textContent = "正在处理…";
+
+          var W = spec.w, H = spec.h,
+              minBytes = spec.minKB * 1024, maxBytes = spec.maxKB * 1024,
+              iw = state.origW, ih = state.origH;
+
+          // 居中裁剪：算出原图里要取的那一块
+          var targetRatio = W / H, srcRatio = iw / ih;
+          var sx, sy, sw, sh;
+          if (srcRatio > targetRatio) { sw = Math.round(ih * targetRatio); sh = ih; sx = Math.round((iw - sw) / 2); sy = 0; }
+          else { sw = iw; sh = Math.round(iw / targetRatio); sx = 0; sy = Math.round((ih - sh) / 2); }
+
+          var canvas = document.createElement("canvas");
+          canvas.width = W; canvas.height = H;
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, W, H);
+          ctx.drawImage(state.img, sx, sy, sw, sh, 0, 0, W, H);
+
+          var tries = 0;
+          // 二分法：在画质 0.02~1 之间找「不超过最大 KB」里画质最高的一档
+          function search(lo, hi, best, done) {
+            if (hi - lo < 0.02 || tries >= 12) { done(best); return; }
+            var mid = (lo + hi) / 2;
+            tries++;
+            canvasToBlob(canvas, mid).then(function (blob) {
+              if (!blob) { done(best); return; }
+              if (blob.size <= maxBytes) {
+                best = blob;
+                search(mid, hi, best, done);   // 还能再清晰一点
+              } else {
+                search(lo, mid, best, done);   // 太大了，画质降一点
+              }
+            });
+          }
+
+          canvasToBlob(canvas, 1).then(function (topBlob) {
+            tries++;
+            if (topBlob && topBlob.size <= maxBytes) {
+              finish(topBlob, tries, spec, { sx: sx, sy: sy, sw: sw, sh: sh });
+              return;
+            }
+            if (topBlob && topBlob.size < minBytes) {
+              // 最高画质都到不了最小值（极少见），就用最高画质，自检里会如实标出
+              finish(topBlob, tries, spec, { sx: sx, sy: sy, sw: sw, sh: sh });
+              return;
+            }
+            search(0.02, 1, null, function (best) {
+              if (best) { finish(best, tries, spec, { sx: sx, sy: sy, sw: sw, sh: sh }); return; }
+              // 连最低画质都超了：用最低画质出图，自检里标红说明
+              canvasToBlob(canvas, 0.02).then(function (lowBlob) {
+                tries++;
+                finish(lowBlob, tries, spec, { sx: sx, sy: sy, sw: sw, sh: sh });
+              });
+            });
+          });
+        });
+
+        function finish(blob, tries, spec, crop) {
+          goBtn.disabled = false;
+          goBtn.textContent = "重新处理";
+          if (!blob) {
+            $("triedLine").textContent = "处理失败了，换一张照片再试试。";
+            result.classList.add("show");
+            return;
+          }
+          if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
+          state.resultBlob = blob;
+          state.resultUrl = URL.createObjectURL(blob);
+
+          var W = spec.w, H = spec.h;
+          $("prevOrig").src = state.origUrl;
+          $("prevNew").src = state.resultUrl;
+          $("capOrig").textContent = state.origW + " × " + state.origH + " · " + fmtKB(state.file.size);
+          $("capNew").textContent = W + " × " + H + " · " + fmtKB(blob.size);
+          $("triedLine").textContent = "已自动试了 " + tries + " 次画质，把大小压进范围里，不用你自己反复试。照片是从中间裁的，下载前看一眼处理后预览，确认头顶和下巴没被裁掉。";
+
+          $("cmpOrigPx").textContent = state.origW + " × " + state.origH;
+          $("cmpNewPx").textContent = W + " × " + H;
+          $("cmpOrigKb").textContent = fmtKB(state.file.size);
+          $("cmpNewKb").textContent = fmtKB(blob.size);
+          $("cmpOrigFmt").textContent = fmtType(state.file);
+          $("cmpNewFmt").textContent = "JPG";
+
+          /* ----- 自检清单 ----- */
+          var inRange = blob.size <= spec.maxKB * 1024 && blob.size >= spec.minKB * 1024;
+          var tooSmallSrc = crop.sw < W || crop.sh < H;
+          var items = [];
+
+          items.push({
+            st: "pass",
+            t: "格式是 JPG",
+            d: "处理后的照片是 JPG 格式，和报名系统最常见的要求对得上。"
+          });
+          items.push({
+            st: "pass",
+            t: "像素正好 " + W + " × " + H,
+            d: "不多不少，正好等于你选的要求。"
+          });
+          if (inRange) {
+            items.push({
+              st: "pass",
+              t: "大小 " + fmtKB(blob.size) + "，在要求范围内",
+              d: "要求是 " + rangeText(spec.minKB, spec.maxKB) + "，这一项达标。"
+            });
+          } else if (blob.size > spec.maxKB * 1024) {
+            items.push({
+              st: "fail",
+              t: "大小 " + fmtKB(blob.size) + "，还是超了",
+              d: "已经把画质降到最低还是超过 " + spec.maxKB + " KB。这张照片内容太复杂，建议换一张背景简单点的照片再试。"
+            });
+          } else {
+            items.push({
+              st: "fail",
+              t: "大小 " + fmtKB(blob.size) + "，比最小要求还小",
+              d: "要求至少 " + spec.minKB + " KB，但这张图在最高画质下也只有这么大。可以换一张像素更高、更清楚的原图。"
+            });
+          }
+          if (tooSmallSrc) {
+            items.push({
+              st: "warn",
+              t: "原图比目标像素还小，是放大出来的",
+              d: "原图裁完只剩 " + crop.sw + " × " + crop.sh + " 像素，比要求的 " + W + " × " + H + " 还小。放大后的照片会发糊，有可能审核不过——最好换一张更清楚的大图重新处理。"
+            });
+          } else {
+            items.push({
+              st: "pass",
+              t: "原图够清楚",
+              d: "原图裁完有 " + crop.sw + " × " + crop.sh + " 像素，不小于目标像素，是缩小不是放大，清晰度没问题。"
+            });
+          }
+          if (state.preset === "guokao") {
+            items.push({
+              st: "warn",
+              t: "国考还要过一遍官方工具",
+              d: "这里只帮你把像素和大小预检到位。正式报名时，仍要用官方「照片处理工具」处理并上传它保存的那张照片。"
+            });
+          }
+
+          var list = $("checkList");
+          list.innerHTML = "";
+          var ICONS = {
+            pass: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".18"/><path d="M8 12.5l2.6 2.6L16 9.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+            warn: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4L22 20H2L12 4z" fill="currentColor" opacity=".18"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.2" fill="currentColor"/></svg>',
+            fail: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".18"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'
+          };
+          items.forEach(function (it) {
+            var li = document.createElement("li");
+            li.className = "st-" + it.st;
+            var ic = document.createElement("span");
+            ic.className = "ic";
+            ic.innerHTML = ICONS[it.st];
+            ic.style.color = it.st === "pass" ? "var(--pass)" : it.st === "warn" ? "var(--warn)" : "var(--fail)";
+            var tx = document.createElement("div");
+            tx.className = "t";
+            var strong = document.createElement("strong");
+            strong.textContent = it.t;
+            var span = document.createElement("span");
+            span.textContent = it.d;
+            tx.appendChild(strong);
+            tx.appendChild(span);
+            li.appendChild(ic);
+            li.appendChild(tx);
+            list.appendChild(li);
+          });
+
+          var dl = $("dlBtn");
+          dl.href = state.resultUrl;
+          dl.setAttribute("download", "报名照片_" + W + "x" + H + ".jpg");
+          var dlWarn = $("dlWarn");
+          var hasFail = items.some(function (i) { return i.st === "fail"; });
+          var hasWarn = items.some(function (i) { return i.st === "warn"; });
+          if (hasFail) {
+            dlWarn.textContent = "上面有不合格的项，这张下载了也大概率传不上去，建议先按提示换图或改要求。";
+            dlWarn.classList.add("show");
+          } else if (hasWarn) {
+            dlWarn.textContent = "上面有需要注意的项，看一眼再决定要不要用这张。";
+            dlWarn.classList.add("show");
+            dlWarn.style.color = "var(--warn)";
+          } else {
+            dlWarn.classList.remove("show");
+          }
+          if (!hasFail && !hasWarn) { /* all good */ }
+          if (hasFail || !hasWarn) dlWarn.style.color = "";
+
+          result.classList.add("show");
+          result.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        refreshSummary();
+        updateGoBtn();
+      })();
+    </script>
+  </body>
+</html>
